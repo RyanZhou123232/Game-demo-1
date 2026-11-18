@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
+
+# Frames from the original game video: local reference only, not published
+docs/reference/video_*.png

@@ -1,0 +1,21 @@
+{
+  "name": "dusk-patrol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A stylized low-poly browser flight game (remake of 'Dusk Patrol').",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview --open",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
