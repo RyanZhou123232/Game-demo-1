@@ -19,6 +19,7 @@
       missile magazine with reload, new wave after all 4 are down
 - [x] Wingtip contrails
 - [x] Synthesised sound (engine, missile, explosion, roll), off by default
+- [x] Published to GitHub: https://github.com/RyanZhou123232/Game-demo-1
 - [x] 23 unit tests (noise, terrain, flight, combat, HUD text, camera cycling, input)
 
 ### Next (waiting on Ryan's playtest feedback)

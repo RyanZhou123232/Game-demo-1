@@ -51,6 +51,9 @@ docs/              PROGRESS.md, DECISIONS.md, reference/ (video frames, screensh
   any notable choice to `docs/DECISIONS.md`.
 
 ## How Claude works on this repo
+- GitHub (public): https://github.com/RyanZhou123232/Game-demo-1 (branch `main`). Claude pushes;
+  Ryan's local folder is not a git checkout, so keep the folder and GitHub in sync after changes.
+- Video frames (`docs/reference/video_*.png`) are git-ignored: local reference only.
 - Ryan's folder (`E:\project repo\飞机游戏`) is the source of truth. Claude edits files there
   directly, or builds in its cloud workspace and copies files back.
 - Visual checks: build, then screenshot with headless Chrome (software WebGL — low FPS
