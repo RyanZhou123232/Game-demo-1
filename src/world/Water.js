@@ -49,10 +49,13 @@ const fragment = /* glsl */ `
   void main() {
     float big = vnoise(vWorld.xz / 900.0) * 0.6 + vnoise(vWorld.xz / 260.0) * 0.4;
     vec3 col = mix(uDeep, uShallow, smoothstep(0.35, 0.75, big));
-    float s = max(strokes(vWorld.xz, 1.0, 0.25), strokes(vWorld.xz + 500.0, 0.6, -0.15) * 0.8);
-    col = mix(col, uFoam, s * 0.85);
-
     float dist = length(cameraPosition - vWorld);
+    // Foam strokes only near the camera: far away each stroke is smaller than a
+    // pixel and would just sparkle. Fade them out with distance.
+    float near = 1.0 - smoothstep(500.0, 1800.0, dist);
+    float s = max(strokes(vWorld.xz, 1.0, 0.12), strokes(vWorld.xz + 500.0, 0.6, -0.07) * 0.8);
+    col = mix(col, uFoam, s * 0.8 * near);
+
     float fog = smoothstep(uFogNear, uFogFar, dist);
     gl_FragColor = vec4(mix(col, uFog, fog), 1.0);
   }

@@ -79,7 +79,8 @@ export const COMBAT = {
 
 export const RENDER = {
   pixelScale: 3, // render at 1/pixelScale resolution, then upscale
-  colorLevels: 14, // per channel, before dithering
+  colorLevels: 22, // colour steps per channel (fewer = more posterised)
+  ditherStrength: 0.45, // 0 = no dither pattern, 1 = strong cross-hatch
 };
 
 export const CAMERA_MODES = ['CHASE', 'COCKPIT', 'OVERHEAD'];

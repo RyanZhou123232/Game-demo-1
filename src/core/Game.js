@@ -36,7 +36,7 @@ export class Game {
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(PALETTE.fog, WORLD.fogNear, WORLD.fogFar);
-    this.camera = new THREE.PerspectiveCamera(62, 16 / 9, 1, 30000);
+    this.camera = new THREE.PerspectiveCamera(62, 16 / 9, 2, 30000);
 
     const sunDir = new THREE.Vector3(-0.6, 0.35, -0.7).normalize();
     this.scene.add(new THREE.HemisphereLight(PALETTE.hemiSky, PALETTE.hemiGround, 1.6));
@@ -82,7 +82,6 @@ export class Game {
   resize() {
     const w = window.innerWidth;
     const h = window.innerHeight - BAR_HEIGHT;
-    this.renderer.setSize(w, h, false);
     const low = this.pixelPass.setSize(w, h);
     this.overlay.width = low.w;
     this.overlay.height = low.h;

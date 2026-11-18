@@ -56,15 +56,19 @@ export class Sky {
   }
 
   buildMountainRing() {
+    // Rock faces and snowcaps are separate meshes drawn in a fixed order with no
+    // depth writes. (Putting caps 5 m in front of rock 10 km away made the GPU's
+    // depth test flip between them every frame, which looked like flickering.)
     const rand = mulberry32(99);
     const radius = 10000;
     const count = 90;
-    const pos = [];
-    const col = [];
+    const rock = { pos: [], col: [] };
+    const snowCaps = { pos: [], col: [] };
     const haze = new THREE.Color(0xa898b4);
     const hazeDark = new THREE.Color(0x8e7f9e);
     const snow = new THREE.Color(0xeee6ee);
-    const push = (v, c) => { pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); };
+    const snowShade = new THREE.Color(0xd6cddc);
+    const push = (buf, v, c) => { buf.pos.push(v.x, v.y, v.z); buf.col.push(c.r, c.g, c.b); };
 
     for (let i = 0; i < count; i++) {
       if (rand() < 0.25) continue;
@@ -78,28 +82,30 @@ export class Sky {
       const peak = new THREE.Vector3(Math.cos(ap) * (radius - 200), height, Math.sin(ap) * (radius - 200));
       const mid = left.clone().lerp(right, 0.5);
       // two faces (lit + shadow) for a faceted look
-      push(left, haze); push(mid, haze); push(peak, haze);
-      push(mid, hazeDark); push(right, hazeDark); push(peak, hazeDark);
-      // snow cap
+      push(rock, left, haze); push(rock, mid, haze); push(rock, peak, haze);
+      push(rock, mid, hazeDark); push(rock, right, hazeDark); push(rock, peak, hazeDark);
       if (height > 1100) {
         const t = 0.7;
         const l2 = left.clone().lerp(peak, t);
         const r2 = right.clone().lerp(peak, t);
         const m2 = mid.clone().lerp(peak, t);
-        const off = peak.clone().sub(mid).normalize().multiplyScalar(-5); // nudge toward camera
-        [l2, r2, m2].forEach((v) => v.add(off));
-        const pk = peak.clone().add(off);
-        push(l2, snow); push(m2, snow); push(pk, snow);
-        push(m2, snow); push(r2, snow); push(pk, snow);
+        push(snowCaps, l2, snow); push(snowCaps, m2, snow); push(snowCaps, peak, snow);
+        push(snowCaps, m2, snowShade); push(snowCaps, r2, snowShade); push(snowCaps, peak, snowShade);
       }
     }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.renderOrder = -9;
-    return mesh;
+    const group = new THREE.Group();
+    [rock, snowCaps].forEach((buf, order) => {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(buf.pos, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(buf.col, 3));
+      const mat = new THREE.MeshBasicMaterial({
+        vertexColors: true, fog: false, side: THREE.DoubleSide, depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = -9 + order; // rock first, then snow on top
+      group.add(mesh);
+    });
+    return group;
   }
 
   buildHorizonClouds() {

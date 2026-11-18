@@ -20,7 +20,15 @@
 - [x] Wingtip contrails
 - [x] Synthesised sound (engine, missile, explosion, roll), off by default
 - [x] Published to GitHub: https://github.com/RyanZhou123232/Game-demo-1
-- [x] 23 unit tests (noise, terrain, flight, combat, HUD text, camera cycling, input)
+- [x] 26 unit tests (noise, terrain, flight, combat, HUD text, camera cycling, input)
+
+### v0.2 visual pass (2026-11-18, from Ryan's playtest)
+- [x] Dither pattern much subtler (strength 0.45, 22 colour levels) and crisp on scaled
+      (150%/HiDPI) screens: art pixels are now whole device pixels, no browser blur
+- [x] Anti-flicker: scene rendered at 2x and averaged per art pixel
+- [x] Distant mountains no longer flicker (snowcaps drawn as a separate layer, no depth fight)
+- [x] Water foam strokes fade out with distance and move slower (no far-away sparkle)
+- [x] Overhead camera closer to the jet
 
 ### Next (waiting on Ryan's playtest feedback)
 - [ ] Tune feel: steering sensitivity, speeds, camera distance

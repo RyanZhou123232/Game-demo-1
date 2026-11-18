@@ -56,7 +56,7 @@ export class CameraRig {
       cam.fov = 70;
     } else {
       // OVERHEAD: straight down from high above, heading pointing up the screen.
-      cam.position.set(p.x, p.y + 320, p.z);
+      cam.position.set(p.x, p.y + 190, p.z);
       cam.up.set(Math.sin(s.yaw), 0, -Math.cos(s.yaw));
       cam.lookAt(p.x, p.y, p.z);
       cam.fov = 55;

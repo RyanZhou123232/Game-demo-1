@@ -10,3 +10,4 @@
 | 2026-11-17 | 3 cameras (Chase, Cockpit, Overhead) | Those are the ones visible in the video. |
 | 2026-11-17 | Pure logic split from rendering (`flight.js`, `combat.js`, `heightfield.js`) | Lets us unit-test the game rules without a browser. |
 | 2026-11-17 | Sound synthesised with Web Audio, off by default | No audio files; the original also starts with "SOUND OFF". |
+| 2026-11-18 | 2x supersample + device-pixel-aligned upscale; dither strength 0.45 | Ryan found the dots harsh and the mountains/water flickering; averaging removes sub-pixel popping, integer device-pixel blocks keep pixels crisp on Windows display scaling. |
