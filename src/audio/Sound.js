@@ -90,6 +90,26 @@ export class Sound {
     this.burst({ duration: 1.6, freqStart: 900, freqEnd: 60, gain: 1.0, type: 'lowpass' });
   }
 
+  /** Short square-wave beep, used for missile and ground warnings. */
+  beep(freq = 1200, duration = 0.08, gain = 0.18) {
+    if (!this.ctx || !this.enabled) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.setValueAtTime(0, t + duration);
+    osc.connect(g).connect(this.master);
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
+  }
+
+  hit() {
+    this.burst({ duration: 0.5, freqStart: 1800, freqEnd: 200, gain: 0.8, type: 'lowpass' });
+  }
+
   roll() {
     this.burst({ duration: 0.5, freqStart: 700, freqEnd: 1500, gain: 0.25 });
   }

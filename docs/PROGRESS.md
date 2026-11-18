@@ -20,7 +20,7 @@
 - [x] Wingtip contrails
 - [x] Synthesised sound (engine, missile, explosion, roll), off by default
 - [x] Published to GitHub: https://github.com/RyanZhou123232/Game-demo-1
-- [x] 26 unit tests (noise, terrain, flight, combat, HUD text, camera cycling, input)
+- [x] 26 unit tests (v0.2) (noise, terrain, flight, combat, HUD text, camera cycling, input)
 
 ### v0.2 visual pass (2026-11-18, from Ryan's playtest)
 - [x] Dither pattern much subtler (strength 0.45, 22 colour levels) and crisp on scaled
@@ -30,13 +30,23 @@
 - [x] Water foam strokes fade out with distance and move slower (no far-away sparkle)
 - [x] Overhead camera closer to the jet
 
+### v0.3 combat loop (2026-11-18)
+- [x] Enemies engage inside 3.8 km, lead the player, break off when too close, fire homing missiles
+- [x] Dodging: hard turns out-turn missiles; a barrel roll within 900 m breaks lock (80%)
+- [x] Hull (3 hits), slow repair after 6 s out of combat; terrain/sea crashes
+- [x] MISSILE / PULL UP warnings with beeps; HIT / EVADED toasts
+- [x] SHOT DOWN and MISSION COMPLETE screens; waves get faster and more aggressive
+- [x] Wreck camera orbits the crash site; hull bar + wave label in the bottom bar
+- [x] Live on Vercel: https://game-demo-1.vercel.app/
+- [x] 37 unit tests (+ mission rules); scripted headless playtest of fire/crash/wave flow
+
 ### Next (waiting on Ryan's playtest feedback)
+- [ ] Balance: enemy fire rate, missile turn rate, damage (all in `THREAT` in `src/config.js`)
 - [ ] Tune feel: steering sensitivity, speeds, camera distance
 - [ ] Compare look side by side with the video and adjust palette/terrain
 - [ ] Acceptance criteria (Ryan to define)
 
 ### Known issues / limitations
 - Terrain cliffs along rivers can look steep and purple; the original is gentler.
-- No collision with enemies or crash state (demo: the jet just stays above ground).
 - Performance only checked in software rendering; real GPU should be much faster.
   If it's slow, raise `RENDER.pixelScale` or lower `WORLD.chunkRadius` in `src/config.js`.

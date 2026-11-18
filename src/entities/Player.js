@@ -22,6 +22,24 @@ export class Player {
     this.forward = new THREE.Vector3(0, 0, -1);
     this.boosting = false;
     this.time = 0;
+    this.dead = false;
+    // what enemy missiles home in on
+    this.target = { pos: this.position, alive: true };
+  }
+
+  /** Put a fresh jet in the air at (x, z), safely above the ground. */
+  reset(x, z, yaw, groundHeight) {
+    this.state = createFlightState({ x, z, yaw });
+    this.state.y = Math.max(FLIGHT.startAltitude, Math.max(0, groundHeight(x, z)) + 400);
+    this.dead = false;
+    this.target.alive = true;
+    this.update(0, { stickX: 0, stickY: 0, boost: false }, groundHeight);
+  }
+
+  kill() {
+    this.dead = true;
+    this.target.alive = false;
+    this.model.visible = false;
   }
 
   barrelRoll(dir) {

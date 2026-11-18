@@ -1,7 +1,7 @@
 // Wires everything together and runs the main loop.
 
 import * as THREE from 'three';
-import { PALETTE, WORLD, FLIGHT, COMBAT, MS_TO_KT, M_TO_FT } from '../config.js';
+import { PALETTE, WORLD, FLIGHT, COMBAT, THREAT, MS_TO_KT, M_TO_FT } from '../config.js';
 import { createHeightfield } from '../world/heightfield.js';
 import { Terrain } from '../world/Terrain.js';
 import { Water } from '../world/Water.js';
@@ -12,6 +12,10 @@ import { Enemies } from '../entities/Enemies.js';
 import { Missiles } from '../entities/Missiles.js';
 import { createMagazine, tickMagazine, useMissile, findLockTarget } from '../entities/combat.js';
 import { headingDegrees } from '../entities/flight.js';
+import {
+  createMission, tickMission, applyDamage, crash, registerKill, nextWave, restartMission,
+  groundWarning, isCrash, rollBreaksLock,
+} from '../entities/mission.js';
 import { Particles } from '../fx/Particles.js';
 import { Contrails } from '../fx/Contrails.js';
 import { PixelPass } from '../render/PixelPass.js';
@@ -59,7 +63,9 @@ export class Game {
     this.enemies = new Enemies(this.scene);
     this.missiles = new Missiles(this.scene, this.particles);
     this.magazine = createMagazine(COMBAT.maxMissiles, COMBAT.missileReload);
-    this.kills = 0;
+    this.mission = createMission();
+    this.warnTimer = 0;
+    this.endTimer = 0;
 
     this.rig = new CameraRig(this.camera);
     this.input = new Input(canvas.parentElement);
@@ -70,7 +76,8 @@ export class Game {
     this.hud = new Hud(hudRoot, {
       onSound: () => this.hud.setSound(this.sound.toggle()),
       onFullscreen: () => this.toggleFullscreen(),
-      onStart: () => { this.started = true; },
+      onStart: () => this.beginMission(),
+      onEnd: () => this.continueAfterEnd(),
     });
     this.hud.setCamera(this.rig.index);
 
@@ -110,15 +117,23 @@ export class Game {
   handleEvents() {
     for (const ev of this.input.drain()) {
       if (!this.started) continue;
-      if (ev === 'roll-left' || ev === 'roll-right') {
-        if (this.player.barrelRoll(ev === 'roll-left' ? -1 : 1)) this.sound.roll();
-      } else if (ev === 'camera') {
+      if (ev === 'camera') {
         this.rig.cycle();
         this.hud.setCamera(this.rig.index);
+        continue;
+      }
+      if (ev === 'sound') {
+        this.hud.setSound(this.sound.toggle());
+        continue;
+      }
+      if (this.player.dead) continue;
+      if (ev === 'roll-left' || ev === 'roll-right') {
+        if (this.player.barrelRoll(ev === 'roll-left' ? -1 : 1)) {
+          this.sound.roll();
+          this.tryEvade();
+        }
       } else if (ev === 'missile') {
         this.fireMissile();
-      } else if (ev === 'sound') {
-        this.hud.setSound(this.sound.toggle());
       }
     }
   }
@@ -128,44 +143,189 @@ export class Game {
       this.hud.toast('RELOADING', 700);
       return;
     }
-    this.missiles.fire(this.player, this.enemies);
+    this.missiles.firePlayer(this.player, this.enemies);
     this.sound.missile();
   }
+
+  // ---------------------------------------------------------------- mission flow
+
+  beginMission() {
+    this.started = true;
+    restartMission(this.mission);
+    this.enemies.spawnAll(this.player.position, this.player.state.yaw, this.groundHeight, 1);
+    this.hud.setWave(1);
+    this.hud.toast('WAVE 1', 1400);
+  }
+
+  /** Barrel roll: last-second dodge against close incoming missiles. */
+  tryEvade() {
+    let shaken = 0;
+    for (const m of this.missiles.chasing(this.player.target)) {
+      if (rollBreaksLock(m.pos.distanceTo(this.player.position))) {
+        m.target = null; // flies straight on and fizzles
+        shaken++;
+      }
+    }
+    if (shaken) this.hud.toast(shaken > 1 ? 'MISSILES EVADED' : 'MISSILE EVADED', 1000);
+  }
+
+  playerDestroyed() {
+    this.player.kill();
+    this.particles.explosion(this.player.position, 1.4);
+    this.sound.explosion();
+    this.endTimer = 1.6; // let the explosion play before the screen
+  }
+
+  continueAfterEnd() {
+    const p = this.player.position;
+    if (this.mission.phase === 'dead') {
+      // fresh start: new jet, wave 1
+      this.missiles.clear();
+      this.contrails.reset();
+      this.player.reset(p.x, p.z, this.player.state.yaw, this.groundHeight);
+      this.rig.initialised = false;
+      restartMission(this.mission);
+      this.magazine.count = this.magazine.max;
+    } else {
+      nextWave(this.mission);
+    }
+    this.enemies.spawnAll(this.player.position, this.player.state.yaw, this.groundHeight, this.mission.wave);
+    this.hud.setWave(this.mission.wave);
+    this.hud.toast(`WAVE ${this.mission.wave}`, 1400);
+  }
+
+  // ---------------------------------------------------------------- main step
 
   step(dt) {
     this.time += dt;
     this.handleEvents();
+    const m = this.mission;
+    const playing = this.started && m.phase === 'playing';
     const input = this.started
       ? { stickX: this.input.stickX, stickY: this.input.stickY, boost: this.input.boost }
       : { stickX: Math.sin(this.time * 0.3) * 0.25, stickY: 0, boost: false }; // gentle attract-mode turn
 
-    this.player.update(dt, input, this.groundHeight);
+    if (!this.player.dead) this.player.update(dt, input, this.groundHeight);
     const p = this.player.position;
+    const s = this.player.state;
     this.terrain.update(p.x, p.z);
     this.water.update(dt, p.x, p.z);
     this.clouds.update(dt, p.x, p.z);
-    this.enemies.update(dt, p, this.player.state.yaw, this.groundHeight);
-    this.missiles.update(dt, this.groundHeight, (enemy, pos) => {
-      this.enemies.kill(enemy);
+    tickMission(m, dt);
+
+    this.enemies.update(dt, {
+      playerPos: p,
+      playerYaw: s.yaw,
+      playerForward: this.player.forward,
+      playerSpeed: s.speed,
+      groundHeight: this.groundHeight,
+      engage: playing,
+      grace: m.grace,
+      hostileMissiles: this.missiles.hostileCount,
+      onFire: (enemy) => {
+        const d = this.enemies.difficulty;
+        this.missiles.launch({
+          pos: enemy.pos.clone().addScaledVector(enemy.forward, 12),
+          dir: enemy.forward,
+          speed: d.enemySpeed + 80,
+          target: this.player.target,
+          hostile: true,
+          maxSpeed: d.missileSpeed,
+          turnRate: d.missileTurnRate,
+          life: THREAT.missileLife,
+          hitRadius: THREAT.hitRadius,
+        });
+        this.sound.missile();
+      },
+    });
+
+    this.missiles.update(dt, this.groundHeight, (target, pos) => {
+      if (target === this.player.target) {
+        this.particles.explosion(pos, 0.7);
+        this.sound.hit();
+        if (applyDamage(m, THREAT.missileDamage, 'MISSILE')) this.playerDestroyed();
+        else this.hud.toast('HIT', 600);
+        return;
+      }
+      this.enemies.kill(target);
       this.particles.explosion(pos, 1);
       this.sound.explosion();
-      this.kills = this.enemies.destroyed;
-      this.hud.toast(this.kills >= COMBAT.enemyCount ? 'SQUADRON DOWN' : 'SPLASH ONE');
+      if (registerKill(m)) {
+        this.hud.toast('SQUADRON DOWN', 1400);
+        this.endTimer = 1.5;
+      } else {
+        this.hud.toast('SPLASH ONE');
+      }
     });
-    if (this.enemies.destroyed === 0) this.kills = 0;
+
+    // terrain
+    const altitude = s.y - Math.max(0, this.groundHeight(s.x, s.z));
+    if (playing && !this.player.dead && isCrash(altitude) && crash(m)) this.playerDestroyed();
+
+    // end screens appear after a short beat
+    if (this.endTimer > 0) {
+      this.endTimer -= dt;
+      if (this.endTimer <= 0) {
+        if (m.phase === 'dead') {
+          this.hud.showEnd('SHOT DOWN', m.cause === 'TERRAIN'
+            ? `YOU HIT THE GROUND · REACHED WAVE ${m.wave}`
+            : `DESTROYED BY A MISSILE · REACHED WAVE ${m.wave}`);
+        } else if (m.phase === 'complete') {
+          this.hud.showEnd('MISSION COMPLETE', `WAVE ${m.wave} CLEARED · NEXT WAVE IS FASTER`);
+        }
+      }
+    }
+
+    this.updateWarnings(dt, playing, altitude);
+
     tickMagazine(this.magazine, dt);
     this.particles.update(dt);
     this.contrails.update(dt);
 
-    this.rig.update(dt, this.player);
+    this.rig.update(dt, this.player, this.groundHeight);
     this.sky.update(this.camera);
-    this.contrails.setVisible(this.rig.mode !== 'COCKPIT');
+    this.contrails.setVisible(this.rig.mode !== 'COCKPIT' && !this.player.dead);
 
-    const s = this.player.state;
     const throttle = (s.speed - FLIGHT.minSpeed) / (FLIGHT.boostSpeed - FLIGHT.minSpeed);
-    this.sound.update(Math.max(0, Math.min(1, throttle)));
-    this.hud.update(headingDegrees(s), s.speed, this.kills);
     this.throttle = Math.max(0, Math.min(1, throttle));
+    this.sound.update(this.player.dead ? 0 : this.throttle);
+    this.hud.update(headingDegrees(s), s.speed, m.kills);
+    this.hud.setHealth(m.health / THREAT.maxHealth);
+  }
+
+  /** MISSILE / PULL UP warnings with beeps that speed up as danger grows. */
+  updateWarnings(dt, playing, altitude) {
+    if (!playing || this.player.dead) {
+      this.hud.setWarning('');
+      return;
+    }
+    const incoming = this.missiles.chasing(this.player.target);
+    let nearest = Infinity;
+    for (const mm of incoming) nearest = Math.min(nearest, mm.pos.distanceTo(this.player.position));
+    const low = groundWarning(altitude, this.player.state.verticalSpeed);
+
+    let text = '';
+    let interval = 0;
+    let freq = 0;
+    if (incoming.length) {
+      text = 'MISSILE';
+      interval = Math.max(0.08, Math.min(0.6, nearest / 3000));
+      freq = 1400;
+    } else if (low) {
+      text = 'PULL UP';
+      interval = 0.35;
+      freq = 700;
+    }
+    this.hud.setWarning(text);
+    if (interval) {
+      this.warnTimer -= dt;
+      if (this.warnTimer <= 0) {
+        this.sound.beep(freq);
+        this.warnTimer = interval;
+      }
+    } else {
+      this.warnTimer = 0;
+    }
   }
 
   render() {

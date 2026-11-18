@@ -11,3 +11,5 @@
 | 2026-11-17 | Pure logic split from rendering (`flight.js`, `combat.js`, `heightfield.js`) | Lets us unit-test the game rules without a browser. |
 | 2026-11-17 | Sound synthesised with Web Audio, off by default | No audio files; the original also starts with "SOUND OFF". |
 | 2026-11-18 | 2x supersample + device-pixel-aligned upscale; dither strength 0.45 | Ryan found the dots harsh and the mountains/water flickering; averaging removes sub-pixel popping, integer device-pixel blocks keep pixels crisp on Windows display scaling. |
+| 2026-11-18 | Combat loop with health, crashes, waves (Ryan approved idea #2) | Turns the demo into a game. Dodging reuses the barrel roll so the controls stay identical to the original's bar (no new flare key). |
+| 2026-11-18 | Barrel-roll evade only within 900 m, 80% chance | Rewards timing instead of spamming rolls; not guaranteed so turning still matters. |

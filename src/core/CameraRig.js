@@ -29,11 +29,28 @@ export class CameraRig {
     return this.mode;
   }
 
-  update(dt, player) {
+  update(dt, player, groundHeight = () => 0) {
     const cam = this.camera;
     const s = player.state;
     const p = player.position;
     const f = player.forward;
+
+    if (player.dead) {
+      // Wreck camera: slow orbit around the crash/explosion, always above the ground.
+      this.orbit = (this.orbit ?? s.yaw + Math.PI) + dt * 0.25;
+      const r = 170;
+      const x = p.x + Math.sin(this.orbit) * r;
+      const z = p.z - Math.cos(this.orbit) * r;
+      const y = Math.max(p.y, Math.max(0, groundHeight(x, z))) + 70;
+      cam.position.set(x, y, z);
+      cam.up.set(0, 1, 0);
+      cam.lookAt(p);
+      cam.fov = 60;
+      cam.updateProjectionMatrix();
+      player.model.visible = false;
+      return;
+    }
+    this.orbit = undefined;
 
     if (this.mode === 'CHASE') {
       // Behind and above, in the heading frame (doesn't spin with barrel rolls).
@@ -62,6 +79,6 @@ export class CameraRig {
       cam.fov = 55;
     }
     cam.updateProjectionMatrix();
-    player.model.visible = this.mode !== 'COCKPIT';
+    player.model.visible = this.mode !== 'COCKPIT' && !player.dead;
   }
 }

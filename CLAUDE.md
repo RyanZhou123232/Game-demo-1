@@ -31,7 +31,7 @@ src/
   main.js          entry point
   core/            Game (main loop), Input, CameraRig
   world/           noise, heightfield (pure terrain math), Terrain, Water, Sky, Clouds
-  entities/        flight.js + combat.js (pure logic), Player, Enemies, Missiles, jetModel
+  entities/        flight.js, combat.js, mission.js (pure logic), Player, Enemies, Missiles, jetModel
   fx/              Particles (smoke/explosions), Contrails
   render/          PixelPass (low-res + dither post-process = the art style)
   ui/              Hud (DOM bars), Cockpit (canvas HUD + instruments), hud.css
@@ -42,7 +42,7 @@ docs/              PROGRESS.md, DECISIONS.md, reference/ (video frames, screensh
 
 ## Conventions
 - Game logic that can be pure (no Three.js/DOM) lives in its own module and gets tests:
-  `flight.js`, `combat.js`, `heightfield.js`, `noise.js`, formatting helpers.
+  `flight.js`, `combat.js`, `mission.js`, `heightfield.js`, `noise.js`, formatting helpers.
 - Units: 1 world unit = 1 metre. Heading 0° = north = −Z, 90° = east = +X.
 - Model space for jets: nose −Z, up +Y, right wing +X.
 - Magic numbers go in `src/config.js`, not inline.
@@ -51,6 +51,7 @@ docs/              PROGRESS.md, DECISIONS.md, reference/ (video frames, screensh
   any notable choice to `docs/DECISIONS.md`.
 
 ## How Claude works on this repo
+- Live: https://game-demo-1.vercel.app/ (Ryan's Vercel project, deploys from GitHub `main`).
 - GitHub (public): https://github.com/RyanZhou123232/Game-demo-1 (branch `main`). Claude pushes;
   Ryan's local folder is not a git checkout, so keep the folder and GitHub in sync after changes.
 - Video frames (`docs/reference/video_*.png`) are git-ignored: local reference only.

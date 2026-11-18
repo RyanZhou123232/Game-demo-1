@@ -57,7 +57,7 @@ export const FLIGHT = {
   turnRate: 0.85, // rad/s of yaw at full bank
   pitchRate: 1.0, // rad/s at full stick
   maxPitch: (70 * Math.PI) / 180,
-  minClearance: 35, // metres above terrain
+  minClearance: 4, // hard floor above terrain (crash is detected at THREAT.crashAltitude)
   rollDuration: 0.85, // seconds for a full barrel roll
   rollSideSlip: 40, // m/s sideways push during a roll
   startAltitude: 650,
@@ -75,6 +75,28 @@ export const COMBAT = {
   maxMissiles: 4,
   missileReload: 2.5, // seconds per missile regained
   respawnDelay: 6, // seconds after all enemies down
+};
+
+// Enemy aggression and player survivability (wave 1 values; mission.js scales them).
+export const THREAT = {
+  maxHealth: 100,
+  missileDamage: 35, // 3 hits = shot down
+  regenDelay: 6, // seconds without damage before health regenerates
+  regenRate: 6, // health per second
+  crashAltitude: 8, // metres above ground/sea that counts as a crash
+  spawnGrace: 5, // seconds before a new wave may fire
+  engageRange: 3800, // enemies switch from patrol to attack inside this distance
+  breakOffRange: 450, // too close: peel away instead of colliding
+  fireRange: 3000,
+  fireConeDeg: 22,
+  fireCooldown: 7, // seconds between shots per enemy
+  maxEnemyMissiles: 2, // in flight at once
+  missileSpeed: 470,
+  missileTurnRate: 1.5,
+  missileLife: 7,
+  hitRadius: 22,
+  evadeRange: 900, // a barrel roll can break lock on missiles closer than this
+  evadeChance: 0.8,
 };
 
 export const RENDER = {

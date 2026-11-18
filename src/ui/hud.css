@@ -39,6 +39,23 @@ body { font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace; col
 }
 .bar button:hover { color: #fff; }
 
+.bar .wave { color: #f2d6a8; letter-spacing: 0.15em; }
+.bar .hull { display: flex; align-items: center; gap: 6px; color: #a99fb0; }
+.bar .hull .meter { width: 60px; height: 5px; background: #3a3442; }
+.bar .hull .meter span { display: block; height: 100%; width: 100%; background: #9fd0a0; transition: width 0.2s; }
+.bar .hull .meter span.low { background: #ff6a4a; }
+
+.warning {
+  position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
+  padding: 3px 10px; font-size: 14px; font-weight: bold; letter-spacing: 0.35em;
+  color: #ff6a4a; border: 1px solid #ff6a4a; background: rgba(40, 14, 14, 0.45);
+  display: none;
+}
+.warning.show { display: block; animation: blink 0.5s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+.blink { animation: blink 1s steps(2, start) infinite; }
+.end h1 { font-size: 28px; }
+
 .toast {
   position: absolute; top: 34%; left: 50%; transform: translateX(-50%);
   font-size: 13px; letter-spacing: 0.3em; color: #f6e2bf; text-shadow: 0 1px 0 #2a2230;
